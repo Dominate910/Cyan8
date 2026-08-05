@@ -5,7 +5,7 @@ from groq import Groq
 import google.generativeai as genai
 from PIL import Image
 import io
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 import os
 import sqlite3
@@ -22,15 +22,16 @@ import subprocess
 import sys
 import re
 import replicate
+import urllib.parse
 
 # ═══════════════════════════════════════════════════════
-# 🌐 CYAN 8 — THE MONEY MAKING MACHINE
+# 🌐 CYAN 8 — COMPLETE AI POWERHOUSE
 # 55MB | 45+ Features | 100+ Languages | FREE Forever
 # ═══════════════════════════════════════════════════════
 
 st.set_page_config(
-    page_title="CYAN 8 - Make Money With AI",
-    page_icon="💰",
+    page_title="CYAN 8 - Your Everything AI",
+    page_icon="🌐",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -73,7 +74,7 @@ CYAN_LOGO = """
     </div>
     <div>
         <span style="font-size:24px;font-weight:800;background:linear-gradient(135deg,#6C5CE7,#00E5FF,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CYAN 8</span>
-        <br><span style="font-size:10px;color:#888;letter-spacing:2px;">MAKE MONEY WITH AI</span>
+        <br><span style="font-size:10px;color:#888;letter-spacing:2px;">YOUR EVERYTHING AI</span>
     </div>
 </div>
 """
@@ -96,10 +97,6 @@ st.markdown("""
     @keyframes pulseGlow {
         0%, 100% { opacity: 0.6; transform: scale(1); }
         50% { opacity: 1; transform: scale(1.05); }
-    }
-    @keyframes moneyFloat {
-        0%, 100% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-10px) scale(1.1); }
     }
     .stApp {
         background: linear-gradient(-45deg, #0a0a1a, #1a0a2e, #0d1a2e, #0a0a1a);
@@ -147,14 +144,6 @@ st.markdown("""
     .glow-card:hover {
         transform: translateY(-5px) scale(1.01);
         box-shadow: 0 12px 48px rgba(108,92,231,0.3);
-    }
-    .money-card {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        border: 2px solid #FFD700;
-        border-radius: 20px;
-        padding: 20px;
-        text-align: center;
-        animation: moneyFloat 3s ease-in-out infinite;
     }
     .cyan-glow {
         background: linear-gradient(135deg, #6C5CE7, #00E5FF, #EC4899);
@@ -271,6 +260,47 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════
+# SESSION STATE
+# ═══════════════════════════════════════════════════════
+
+if "user_id" not in st.session_state: st.session_state.user_id = None
+if "signed_in" not in st.session_state: st.session_state.signed_in = False
+if "user_name" not in st.session_state: st.session_state.user_name = None
+if "user_email" not in st.session_state: st.session_state.user_email = None
+if "sign_in_method" not in st.session_state: st.session_state.sign_in_method = None
+if "chats" not in st.session_state: st.session_state.chats = []
+if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
+if "is_premium" not in st.session_state: st.session_state.is_premium = False
+if "premium_tier" not in st.session_state: st.session_state.premium_tier = None
+if "ai_mode" not in st.session_state: st.session_state.ai_mode = "General"
+if "language" not in st.session_state: st.session_state.language = "English"
+if "memory_vault" not in st.session_state: st.session_state.memory_vault = []
+if "ai_dna_messages" not in st.session_state: st.session_state.ai_dna_messages = 0
+if "total_users" not in st.session_state: st.session_state.total_users = 0
+if "offline_questions_today" not in st.session_state: st.session_state.offline_questions_today = 0
+if "is_offline" not in st.session_state: st.session_state.is_offline = False
+if "show_premium" not in st.session_state: st.session_state.show_premium = False
+if "show_features" not in st.session_state: st.session_state.show_features = False
+if "show_settings" not in st.session_state: st.session_state.show_settings = False
+if "show_labs" not in st.session_state: st.session_state.show_labs = False
+if "show_image_gen" not in st.session_state: st.session_state.show_image_gen = False
+if "show_terms" not in st.session_state: st.session_state.show_terms = False
+if "show_privacy" not in st.session_state: st.session_state.show_privacy = False
+if "show_help_center" not in st.session_state: st.session_state.show_help_center = False
+if "show_viral" not in st.session_state: st.session_state.show_viral = False
+if "show_document" not in st.session_state: st.session_state.show_document = False
+if "show_coach" not in st.session_state: st.session_state.show_coach = False
+if "show_agent" not in st.session_state: st.session_state.show_agent = False
+if "show_art" not in st.session_state: st.session_state.show_art = False
+if "show_search" not in st.session_state: st.session_state.show_search = False
+if "show_money" not in st.session_state: st.session_state.show_money = False
+if "achievements" not in st.session_state: st.session_state.achievements = {}
+if "referral_code" not in st.session_state: st.session_state.referral_code = None
+if "money_earnings" not in st.session_state: st.session_state.money_earnings = 0
+if "total_requests" not in st.session_state: st.session_state.total_requests = 0
+if "daily_login" not in st.session_state: st.session_state.daily_login = None
+
+# ═══════════════════════════════════════════════════════
 # 100+ LANGUAGES
 # ═══════════════════════════════════════════════════════
 
@@ -360,13 +390,13 @@ AI_MODES = {
     "Life": "You are a wise, empathetic life advisor. Give thoughtful guidance.",
     "Finance": "You are an expert financial advisor. Give practical money management advice.",
     "Growth": "You are a certified life coach. Help with goals, habits, and motivation.",
-    "Agent Mode": "You are an AI Agent. Complete complex multi-step tasks autonomously.",
+    "Agent Mode": "You are an AI Agent that completes complex multi-step tasks.",
     "Coach": "You are a world-class life coach. Help users achieve their goals.",
-    "Money Maker": "You are a money-making expert. Help users earn money on TikTok, Fiverr, Upwork, YouTube, and Instagram. Provide practical, actionable advice."
+    "Money Maker": "You are a money-making expert for TikTok, Fiverr, Upwork, YouTube."
 }
 
 # ═══════════════════════════════════════════════════════
-# MONEY MAKING FEATURES
+# MONEY PLATFORMS
 # ═══════════════════════════════════════════════════════
 
 MONEY_PLATFORMS = {
@@ -402,247 +432,6 @@ MONEY_PLATFORMS = {
     }
 }
 
-def generate_money_content(platform, template, topic, language="English"):
-    """Generate money-making content for various platforms"""
-    
-    prompts = {
-        "TikTok": {
-            "Hook Generator": f"Generate 10 viral hooks for TikTok about: {topic}",
-            "Script Writer": f"Write a 30-second TikTok script about: {topic}",
-            "Trend Finder": f"Find 5 trending topics on TikTok related to: {topic}"
-        },
-        "YouTube": {
-            "Video Ideas": f"Generate 10 YouTube video ideas about: {topic}",
-            "Script Generator": f"Write a YouTube video script about: {topic}",
-            "Title Optimizer": f"Generate 10 clickbait titles for YouTube about: {topic}"
-        },
-        "Instagram": {
-            "Post Ideas": f"Generate 10 Instagram post ideas about: {topic}",
-            "Caption Writer": f"Write 5 engaging Instagram captions about: {topic}",
-            "Story Ideas": f"Generate 5 Instagram story ideas about: {topic}"
-        },
-        "Fiverr": {
-            "Gig Creator": f"Create a Fiverr gig description about: {topic}",
-            "Description Writer": f"Write a professional Fiverr gig description for: {topic}",
-            "Pricing Guide": f"Suggest pricing for a Fiverr gig about: {topic}"
-        },
-        "Upwork": {
-            "Proposal Writer": f"Write a winning Upwork proposal for: {topic}",
-            "Profile Optimizer": f"Write an Upwork profile description about: {topic}",
-            "Skill Finder": f"Find 10 in-demand skills on Upwork related to: {topic}"
-        },
-        "Freelance": {
-            "Portfolio Builder": f"Create a portfolio description for: {topic}",
-            "Rate Calculator": f"Calculate freelance rates for: {topic}",
-            "Client Magnet": f"Write a client-attracting bio about: {topic}"
-        }
-    }
-    
-    prompt = prompts.get(platform, {}).get(template, f"Create content about: {topic}")
-    return get_ai_response(prompt, "Money Maker", language)
-
-# ═══════════════════════════════════════════════════════
-# VIRAL FEATURES
-# ═══════════════════════════════════════════════════════
-
-DAILY_CHALLENGES = [
-    {"title": "Riddle Master", "description": "Solve today's AI-generated riddle", "icon": "🧩"},
-    {"title": "Creative Sprint", "description": "Write a story in 60 seconds", "icon": "⚡"},
-    {"title": "Brain Teaser", "description": "Solve a complex math problem", "icon": "🧠"},
-    {"title": "Language Twist", "description": "Translate a phrase to 5 languages", "icon": "🌍"},
-    {"title": "Code Challenge", "description": "Debug a piece of code", "icon": "💻"},
-    {"title": "History Quest", "description": "Answer a history question", "icon": "📜"},
-]
-
-ACHIEVEMENTS = [
-    {"name": "First Chat", "desc": "Send your first message", "icon": "💬", "points": 10},
-    {"name": "Memory Master", "desc": "Save 50 things to Memory Vault", "icon": "🧠", "points": 50},
-    {"name": "Language Learner", "desc": "Use 10 different languages", "icon": "🌍", "points": 30},
-    {"name": "Viral Star", "desc": "Share 10 times", "icon": "⭐", "points": 100},
-    {"name": "AI Explorer", "desc": "Try all 8 AI modes", "icon": "🧭", "points": 40},
-    {"name": "Night Owl", "desc": "Use CYAN 8 after midnight", "icon": "🦉", "points": 20},
-    {"name": "Money Maker", "desc": "Generate your first money-making content", "icon": "💰", "points": 50},
-    {"name": "Earning Pro", "desc": "Create 10 money-making pieces of content", "icon": "💎", "points": 100},
-]
-
-# ═══════════════════════════════════════════════════════
-# TERMS & POLICY
-# ═══════════════════════════════════════════════════════
-
-TERMS_OF_SERVICE = """
-# 📋 Terms of Service for CYAN 8
-
-**Last Updated:** July 2026
-
-## 1. Acceptance of Terms
-By using CYAN 8 ("the App"), you agree to these Terms of Service ("Terms").
-
-## 2. Description of Service
-CYAN 8 is an AI-powered assistant that provides:
-- Conversational AI capabilities
-- Image generation and analysis
-- Memory storage (Memory Vault)
-- 100+ languages
-- 45+ unique features
-- Money-making tools and templates
-
-## 3. User Accounts
-- You must be 13 years or older
-- You are responsible for account security
-
-## 4. Acceptable Use
-You agree NOT to:
-- Use for illegal purposes
-- Generate harmful content
-- Attempt to bypass security
-
-## 5. Privacy & Data
-- We collect minimal data
-- Conversations are encrypted
-- You can request data deletion
-
-## 6. Contact
-Email: support@cyan8.com
-"""
-
-PRIVACY_POLICY = """
-# 🔒 Privacy Policy for CYAN 8
-
-**Last Updated:** July 2026
-
-## 1. Information We Collect
-- Account Information: Name, email
-- Chat History: Conversations with AI
-- Uploaded Content: Images you upload
-- Usage Data: Feature usage, preferences
-
-## 2. How We Use Your Information
-- Provide and improve the App
-- Personalize your experience
-- Send important updates
-
-## 3. Data Storage
-- SQLite database and cloud storage
-- Encrypted at rest and in transit
-
-## 4. Third-Party Sharing
-We share minimal data with:
-- Groq: For AI responses
-- Google Gemini: For image analysis
-- Replicate: For image generation
-
-## 5. Your Rights (GDPR/CCPA)
-- Access your data
-- Correct your data
-- Delete your data
-
-## 6. Contact
-Privacy questions? Email: privacy@cyan8.com
-"""
-
-# ═══════════════════════════════════════════════════════
-# HELP CENTER
-# ═══════════════════════════════════════════════════════
-
-HELP_ARTICLES = {
-    "🚀 Getting Started": {
-        "How to use CYAN 8": "Simply type your question or upload an image.",
-        "AI Modes Explained": "Choose from 11 modes.",
-        "Understanding Memory Vault": "Click 🧠 to save important information.",
-        "Sign In Methods": "Use Google, Apple, or Email."
-    },
-    "💰 Money Features": {
-        "TikTok Money": "Generate viral scripts and hooks.",
-        "YouTube Money": "Get video ideas and scripts.",
-        "Instagram Money": "Get post ideas and captions.",
-        "Fiverr/Upwork": "Create gigs and proposals.",
-        "Freelance": "Build your portfolio and rates."
-    },
-    "⭐ Features": {
-        "45+ Unique Features": "From AI DNA to Money Maker.",
-        "Image Generation": "Describe any image and CYAN 8 will create it.",
-        "Image Analysis": "Upload images and ask questions.",
-        "Offline Mode": "5 free offline questions per day.",
-        "Voice Input": "Speak instead of typing (Premium)."
-    },
-    "🔒 Privacy & Security": {
-        "Your Privacy": "Conversations are private.",
-        "Data Storage": "Stored securely.",
-        "Encryption": "Encrypted at rest and in transit."
-    },
-    "💰 Billing & Premium": {
-        "Premium Plans": "Basic ($0.99/mo), Pro ($3.99/mo), Ultimate ($9.99/mo)",
-        "Lifetime Access": "$49.99 one-time",
-        "Payment Methods": "Credit cards, Google Pay, Apple Pay."
-    }
-}
-
-# ═══════════════════════════════════════════════════════
-# DATABASE SETUP
-# ═══════════════════════════════════════════════════════
-
-def init_database():
-    try:
-        conn = sqlite3.connect("cyan8.db")
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            email TEXT UNIQUE,
-            password_hash TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_premium BOOLEAN DEFAULT 0,
-            premium_tier TEXT,
-            total_chats INTEGER DEFAULT 0,
-            total_messages INTEGER DEFAULT 0,
-            achievements TEXT DEFAULT '{}'
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS chats (
-            id TEXT PRIMARY KEY,
-            user_id INTEGER,
-            title TEXT,
-            mode TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id TEXT,
-            role TEXT,
-            content TEXT,
-            image BLOB,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (chat_id) REFERENCES chats (id)
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS memory_vault (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            memory TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS ai_dna (
-            user_id INTEGER PRIMARY KEY,
-            message_count INTEGER DEFAULT 0,
-            personality TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS referrals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            referrer_id INTEGER,
-            referred_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (referrer_id) REFERENCES users (id),
-            FOREIGN KEY (referred_id) REFERENCES users (id)
-        )''')
-        conn.commit()
-        conn.close()
-        return True
-    except:
-        return False
-
-init_database()
-
 # ═══════════════════════════════════════════════════════
 # API INITIALIZATION
 # ═══════════════════════════════════════════════════════
@@ -660,45 +449,6 @@ def init_apis():
 groq_client = init_apis()
 
 # ═══════════════════════════════════════════════════════
-# SESSION STATE
-# ═══════════════════════════════════════════════════════
-
-if "user_id" not in st.session_state: st.session_state.user_id = None
-if "signed_in" not in st.session_state: st.session_state.signed_in = False
-if "user_name" not in st.session_state: st.session_state.user_name = None
-if "user_email" not in st.session_state: st.session_state.user_email = None
-if "sign_in_method" not in st.session_state: st.session_state.sign_in_method = None
-if "chats" not in st.session_state: st.session_state.chats = []
-if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
-if "is_premium" not in st.session_state: st.session_state.is_premium = False
-if "premium_tier" not in st.session_state: st.session_state.premium_tier = None
-if "ai_mode" not in st.session_state: st.session_state.ai_mode = "General"
-if "language" not in st.session_state: st.session_state.language = "English"
-if "memory_vault" not in st.session_state: st.session_state.memory_vault = []
-if "ai_dna_messages" not in st.session_state: st.session_state.ai_dna_messages = 0
-if "total_users" not in st.session_state: st.session_state.total_users = 0
-if "offline_questions_today" not in st.session_state: st.session_state.offline_questions_today = 0
-if "is_offline" not in st.session_state: st.session_state.is_offline = False
-if "show_premium" not in st.session_state: st.session_state.show_premium = False
-if "show_features" not in st.session_state: st.session_state.show_features = False
-if "show_settings" not in st.session_state: st.session_state.show_settings = False
-if "show_labs" not in st.session_state: st.session_state.show_labs = False
-if "show_image_gen" not in st.session_state: st.session_state.show_image_gen = False
-if "show_terms" not in st.session_state: st.session_state.show_terms = False
-if "show_privacy" not in st.session_state: st.session_state.show_privacy = False
-if "show_help_center" not in st.session_state: st.session_state.show_help_center = False
-if "show_viral" not in st.session_state: st.session_state.show_viral = False
-if "show_document" not in st.session_state: st.session_state.show_document = False
-if "show_coach" not in st.session_state: st.session_state.show_coach = False
-if "show_agent" not in st.session_state: st.session_state.show_agent = False
-if "show_art" not in st.session_state: st.session_state.show_art = False
-if "show_search" not in st.session_state: st.session_state.show_search = False
-if "show_money" not in st.session_state: st.session_state.show_money = False
-if "achievements" not in st.session_state: st.session_state.achievements = {}
-if "referral_code" not in st.session_state: st.session_state.referral_code = None
-if "money_earnings" not in st.session_state: st.session_state.money_earnings = 0
-
-# ═══════════════════════════════════════════════════════
 # FUNCTIONS
 # ═══════════════════════════════════════════════════════
 
@@ -708,10 +458,24 @@ def generate_referral_code():
 def get_daily_challenge():
     today = datetime.now().strftime("%Y-%m-%d")
     if st.session_state.daily_challenge != today:
-        challenge = random.choice(DAILY_CHALLENGES)
+        challenge = random.choice([
+            {"title": "Riddle Master", "description": "Solve today's AI-generated riddle", "icon": "🧩"},
+            {"title": "Creative Sprint", "description": "Write a story in 60 seconds", "icon": "⚡"},
+            {"title": "Brain Teaser", "description": "Solve a complex math problem", "icon": "🧠"},
+            {"title": "Language Twist", "description": "Translate a phrase to 5 languages", "icon": "🌍"},
+            {"title": "Code Challenge", "description": "Debug a piece of code", "icon": "💻"},
+            {"title": "History Quest", "description": "Answer a history question", "icon": "📜"},
+        ])
         st.session_state.daily_challenge = today
         return challenge
-    return random.choice(DAILY_CHALLENGES)
+    return random.choice([
+        {"title": "Riddle Master", "description": "Solve today's AI-generated riddle", "icon": "🧩"},
+        {"title": "Creative Sprint", "description": "Write a story in 60 seconds", "icon": "⚡"},
+        {"title": "Brain Teaser", "description": "Solve a complex math problem", "icon": "🧠"},
+        {"title": "Language Twist", "description": "Translate a phrase to 5 languages", "icon": "🌍"},
+        {"title": "Code Challenge", "description": "Debug a piece of code", "icon": "💻"},
+        {"title": "History Quest", "description": "Answer a history question", "icon": "📜"},
+    ])
 
 def search_web(query):
     try:
@@ -773,28 +537,6 @@ def process_text_file(file_bytes):
         except Exception as e:
             return f"Text file error: {str(e)}"
 
-def execute_code(code, language="python"):
-    if language.lower() == "python":
-        try:
-            output = []
-            local_vars = {}
-            exec(code, {"__builtins__": __builtins__}, local_vars)
-            return f"✅ Code executed successfully!\n\nOutput: {local_vars}"
-        except Exception as e:
-            return f"❌ Error: {str(e)}"
-    else:
-        return f"⚠️ {language} execution not supported."
-
-def ai_assistant_action(action_type, details):
-    actions = {
-        "calendar": f"📅 Calendar updated: {details}",
-        "email": f"📧 Email sent: {details}",
-        "task": f"✅ Task added: {details}",
-        "reminder": f"⏰ Reminder set: {details}",
-        "note": f"📝 Note saved: {details}"
-    }
-    return actions.get(action_type, f"⚠️ Unknown action: {action_type}")
-
 def translate_text(text, target_language):
     try:
         gemini = genai.GenerativeModel("gemini-1.5-flash")
@@ -803,28 +545,6 @@ def translate_text(text, target_language):
         return response.text
     except Exception as e:
         return f"Translation error: {str(e)}"
-
-def apply_style_transfer(image, style):
-    try:
-        gemini = genai.GenerativeModel("gemini-1.5-flash")
-        response = gemini.generate_content([
-            f"Describe this image with {style} style. Be detailed:",
-            image
-        ])
-        return response.text
-    except Exception as e:
-        return f"Style transfer error: {str(e)}"
-
-def get_coaching_response(user_input, coaching_type):
-    coach_prompts = {
-        "career": "You are a career coach. Give practical, actionable career advice.",
-        "fitness": "You are a fitness coach. Create personalized workout plans.",
-        "study": "You are a study coach. Help with learning strategies.",
-        "life": "You are a life coach. Help with personal development.",
-        "business": "You are a business coach. Help with entrepreneurship."
-    }
-    prompt = coach_prompts.get(coaching_type, coach_prompts["life"])
-    return get_ai_response(user_input, prompt, "English")
 
 def get_ai_response(prompt, mode, language="English"):
     if not groq_client:
@@ -850,7 +570,7 @@ Answer with depth, clarity, and precision."""
     
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt}
@@ -963,6 +683,55 @@ def generate_image(prompt):
     except Exception as e:
         return None
 
+def generate_related_images(query, count=5):
+    """Generate 5 related images using Pollinations AI (FREE!)"""
+    images = []
+    for i in range(count):
+        try:
+            url = f"https://pollinations.ai/p/{query.replace(' ', '_')}_{i}?width=400&height=400&nologo=true"
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                images.append(response.content)
+        except:
+            continue
+    return images
+
+def generate_money_content(platform, template, topic, language="English"):
+    prompts = {
+        "TikTok": {
+            "Hook Generator": f"Generate 10 viral hooks for TikTok about: {topic}",
+            "Script Writer": f"Write a 30-second TikTok script about: {topic}",
+            "Trend Finder": f"Find 5 trending topics on TikTok related to: {topic}"
+        },
+        "YouTube": {
+            "Video Ideas": f"Generate 10 YouTube video ideas about: {topic}",
+            "Script Generator": f"Write a YouTube video script about: {topic}",
+            "Title Optimizer": f"Generate 10 clickbait titles for YouTube about: {topic}"
+        },
+        "Instagram": {
+            "Post Ideas": f"Generate 10 Instagram post ideas about: {topic}",
+            "Caption Writer": f"Write 5 engaging Instagram captions about: {topic}",
+            "Story Ideas": f"Generate 5 Instagram story ideas about: {topic}"
+        },
+        "Fiverr": {
+            "Gig Creator": f"Create a Fiverr gig description about: {topic}",
+            "Description Writer": f"Write a professional Fiverr gig description for: {topic}",
+            "Pricing Guide": f"Suggest pricing for a Fiverr gig about: {topic}"
+        },
+        "Upwork": {
+            "Proposal Writer": f"Write a winning Upwork proposal for: {topic}",
+            "Profile Optimizer": f"Write an Upwork profile description about: {topic}",
+            "Skill Finder": f"Find 10 in-demand skills on Upwork related to: {topic}"
+        },
+        "Freelance": {
+            "Portfolio Builder": f"Create a portfolio description for: {topic}",
+            "Rate Calculator": f"Calculate freelance rates for: {topic}",
+            "Client Magnet": f"Write a client-attracting bio about: {topic}"
+        }
+    }
+    prompt = prompts.get(platform, {}).get(template, f"Create content about: {topic}")
+    return get_ai_response(prompt, "Money Maker", language)
+
 # ═══════════════════════════════════════════════════════
 # PAGES
 # ═══════════════════════════════════════════════════════
@@ -971,12 +740,11 @@ def money_maker_page():
     st.markdown('<h1 class="cyan-glow">💰 AI Money Maker</h1>', unsafe_allow_html=True)
     st.caption("Turn your skills into income with AI-powered tools")
     
-    # Earnings Tracker
     st.markdown("### 📊 Your Earnings Tracker")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown("""
-        <div class="money-card">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;border-radius:20px;padding:20px;text-align:center;">
             <h4>💰 Total</h4>
             <h2 class="money-glow">$0</h2>
             <p style="color:#888;">Start earning today</p>
@@ -984,7 +752,7 @@ def money_maker_page():
         """, unsafe_allow_html=True)
     with col2:
         st.markdown("""
-        <div class="money-card" style="border-color:#00E5FF;">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #00E5FF;border-radius:20px;padding:20px;text-align:center;">
             <h4>📱 TikTok</h4>
             <h2 style="color:#00E5FF;">$0</h2>
             <p style="color:#888;">1M+ creators</p>
@@ -992,7 +760,7 @@ def money_maker_page():
         """, unsafe_allow_html=True)
     with col3:
         st.markdown("""
-        <div class="money-card" style="border-color:#FF6B6B;">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FF6B6B;border-radius:20px;padding:20px;text-align:center;">
             <h4>🎬 YouTube</h4>
             <h2 style="color:#FF6B6B;">$0</h2>
             <p style="color:#888;">500M+ viewers</p>
@@ -1000,7 +768,7 @@ def money_maker_page():
         """, unsafe_allow_html=True)
     with col4:
         st.markdown("""
-        <div class="money-card" style="border-color:#4CAF50;">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #4CAF50;border-radius:20px;padding:20px;text-align:center;">
             <h4>💼 Fiverr</h4>
             <h2 style="color:#4CAF50;">$0</h2>
             <p style="color:#888;">50M+ users</p>
@@ -1009,26 +777,19 @@ def money_maker_page():
     
     st.divider()
     
-    # Platform Selector
     st.markdown("### 🎯 Choose Your Platform")
     platforms = list(MONEY_PLATFORMS.keys())
     
     col1, col2, col3 = st.columns(3)
-    platform_buttons = []
     for i, platform in enumerate(platforms):
         with col1 if i % 3 == 0 else col2 if i % 3 == 1 else col3:
             data = MONEY_PLATFORMS[platform]
-            if st.button(f"{data['icon']} {platform}", use_container_width=True, type="secondary"):
-                platform_buttons.append(platform)
+            if st.button(f"{data['icon']} {platform}", use_container_width=True, key=f"money_{platform}"):
+                st.session_state.selected_money_platform = platform
+                st.rerun()
     
-    # If platform selected or in session
-    selected_platform = None
-    if platform_buttons:
-        selected_platform = platform_buttons[0]
     if "selected_money_platform" not in st.session_state:
         st.session_state.selected_money_platform = None
-    if selected_platform:
-        st.session_state.selected_money_platform = selected_platform
     
     if st.session_state.selected_money_platform:
         platform = st.session_state.selected_money_platform
@@ -1036,22 +797,15 @@ def money_maker_page():
         
         st.markdown(f"### {data['icon']} {platform} - {data['description']}")
         
-        # Templates
         templates = data["templates"]
         selected_template = st.selectbox("Choose a template:", templates)
         
-        # Input
         topic = st.text_input(f"What's your topic for {platform}?", placeholder="e.g., Cooking, Gaming, Tech, Business...")
         
-        # Language
-        language = st.selectbox("🌍 Language", list(LANGUAGES.keys()), 
-                               index=list(LANGUAGES.keys()).index(st.session_state.language))
-        
-        # Generate Button
         if st.button("💰 Generate Money Content", type="primary", use_container_width=True):
             if topic:
                 with st.spinner("Creating your money-making content..."):
-                    content = generate_money_content(platform, selected_template, topic, language)
+                    content = generate_money_content(platform, selected_template, topic, st.session_state.language)
                     st.markdown(f"""
                     <div class="glow-card">
                         <h4>{data['icon']} {platform} - {selected_template}</h4>
@@ -1059,22 +813,12 @@ def money_maker_page():
                             <p style="white-space:pre-wrap;">{content}</p>
                         </div>
                         <p style="color:#888;font-size:12px;">💡 Share this content and start earning!</p>
-                        <button class="money-button" onclick="navigator.clipboard.writeText(`{content}`)">📋 Copy Content</button>
                     </div>
                     """, unsafe_allow_html=True)
-                    
-                    # Unlock achievement
                     st.session_state.money_earnings += 1
-                    if st.session_state.money_earnings >= 10:
-                        st.session_state.achievements["Earning Pro"] = True
-                    
-                    # Offer Premium
-                    if not st.session_state.is_premium:
-                        st.info("⭐ Upgrade to Premium for unlimited content generation!")
             else:
                 st.warning("⚠️ Please enter a topic first!")
     
-    # Quick Tips
     st.divider()
     st.markdown("### 💡 Quick Money Tips")
     tips = [
@@ -1086,17 +830,6 @@ def money_maker_page():
     ]
     for tip in tips:
         st.markdown(f"✅ {tip}")
-    
-    # Premium CTA
-    if not st.session_state.is_premium:
-        st.divider()
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:20px;padding:25px;text-align:center;">
-            <h3 style="color:#000;">🚀 Unlock Unlimited Money Content</h3>
-            <p style="color:#000;">Get unlimited content generation, all templates, and premium support.</p>
-            <button class="money-button" onclick="alert('Upgrade to Premium!')">⭐ Upgrade Now</button>
-        </div>
-        """, unsafe_allow_html=True)
     
     if st.button("⬅️ Back to Chat", use_container_width=True):
         st.session_state.show_money = False
@@ -1111,7 +844,6 @@ def viral_features_page():
     <div class="glow-card">
         <h3>{challenge['icon']} {challenge['title']}</h3>
         <p>{challenge['description']}</p>
-        <button class="viral-button">🎯 Start Challenge</button>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1148,10 +880,41 @@ def viral_features_page():
 
 def help_center_page():
     st.markdown('<h1 class="cyan-glow">❓ Help Center</h1>', unsafe_allow_html=True)
-    categories = list(HELP_ARTICLES.keys())
-    selected_category = st.radio("📚 Categories", categories, horizontal=True)
+    categories = {
+        "🚀 Getting Started": {
+            "How to use CYAN 8": "Simply type your question or upload an image.",
+            "AI Modes Explained": "Choose from 11 modes.",
+            "Understanding Memory Vault": "Click 🧠 to save important information.",
+            "Sign In Methods": "Use Google, Apple, or Email."
+        },
+        "💰 Money Features": {
+            "TikTok Money": "Generate viral scripts and hooks.",
+            "YouTube Money": "Get video ideas and scripts.",
+            "Instagram Money": "Get post ideas and captions.",
+            "Fiverr/Upwork": "Create gigs and proposals.",
+            "Freelance": "Build your portfolio and rates."
+        },
+        "⭐ Features": {
+            "45+ Unique Features": "From AI DNA to Money Maker.",
+            "Image Generation": "Describe any image and CYAN 8 will create it.",
+            "Image Analysis": "Upload images and ask questions.",
+            "Offline Mode": "5 free offline questions per day.",
+            "Voice Input": "Speak instead of typing."
+        },
+        "🔒 Privacy & Security": {
+            "Your Privacy": "Conversations are private.",
+            "Data Storage": "Stored securely.",
+            "Encryption": "Encrypted at rest and in transit."
+        },
+        "💰 Billing & Premium": {
+            "Premium Plans": "Basic ($0.99/mo), Pro ($3.99/mo), Ultimate ($9.99/mo)",
+            "Lifetime Access": "$49.99 one-time",
+            "Payment Methods": "Credit cards, Google Pay, Apple Pay."
+        }
+    }
+    selected_category = st.radio("📚 Categories", list(categories.keys()), horizontal=True)
     if selected_category:
-        articles = HELP_ARTICLES[selected_category]
+        articles = categories[selected_category]
         for title, content in articles.items():
             with st.expander(f"📖 {title}"):
                 st.write(content)
@@ -1161,14 +924,80 @@ def help_center_page():
 
 def terms_page():
     st.markdown('<h1 class="cyan-glow">📋 Terms of Service</h1>', unsafe_allow_html=True)
-    st.markdown(TERMS_OF_SERVICE)
+    st.markdown("""
+# 📋 Terms of Service for CYAN 8
+
+**Last Updated:** August 2026
+
+## 1. Acceptance of Terms
+By using CYAN 8 ("the App"), you agree to these Terms of Service.
+
+## 2. Description of Service
+CYAN 8 is an AI-powered assistant that provides:
+- Conversational AI capabilities
+- Image generation and analysis
+- Memory storage (Memory Vault)
+- 100+ languages
+- 45+ unique features
+
+## 3. User Accounts
+- You must be 13 years or older
+- You are responsible for account security
+
+## 4. Acceptable Use
+You agree NOT to:
+- Use for illegal purposes
+- Generate harmful content
+- Attempt to bypass security
+
+## 5. Privacy & Data
+- We collect minimal data
+- Conversations are encrypted
+- You can request data deletion
+
+## 6. Contact
+Email: support@cyan8.com
+""")
     if st.button("⬅️ Back"):
         st.session_state.show_terms = False
         st.rerun()
 
 def privacy_page():
     st.markdown('<h1 class="cyan-glow">🔒 Privacy Policy</h1>', unsafe_allow_html=True)
-    st.markdown(PRIVACY_POLICY)
+    st.markdown("""
+# 🔒 Privacy Policy for CYAN 8
+
+**Last Updated:** August 2026
+
+## 1. Information We Collect
+- Account Information: Name, email
+- Chat History: Conversations with AI
+- Uploaded Content: Images you upload
+- Usage Data: Feature usage, preferences
+
+## 2. How We Use Your Information
+- Provide and improve the App
+- Personalize your experience
+- Send important updates
+
+## 3. Data Storage
+- SQLite database and cloud storage
+- Encrypted at rest and in transit
+
+## 4. Third-Party Sharing
+We share minimal data with:
+- Groq: For AI responses
+- Google Gemini: For image analysis
+- Replicate: For image generation
+
+## 5. Your Rights (GDPR/CCPA)
+- Access your data
+- Correct your data
+- Delete your data
+
+## 6. Contact
+Privacy questions? Email: privacy@cyan8.com
+""")
     if st.button("⬅️ Back"):
         st.session_state.show_privacy = False
         st.rerun()
@@ -1224,31 +1053,162 @@ def coaching_page():
     question = st.text_area("What would you like coaching on?")
     if question and st.button("Get Coaching", type="primary"):
         with st.spinner("Your coach is thinking..."):
-            coach_map = {"Life Coach": "life", "Career Coach": "career", "Fitness Coach": "fitness", "Study Coach": "study", "Business Coach": "business"}
-            response = get_coaching_response(question, coach_map[coach_type])
+            coach_prompts = {
+                "Life Coach": "You are a life coach. Help with personal development.",
+                "Career Coach": "You are a career coach. Give practical career advice.",
+                "Fitness Coach": "You are a fitness coach. Create personalized workout plans.",
+                "Study Coach": "You are a study coach. Help with learning strategies.",
+                "Business Coach": "You are a business coach. Help with entrepreneurship."
+            }
+            response = get_ai_response(question, coach_prompts.get(coach_type, "You are a helpful coach."), st.session_state.language)
             st.markdown(f"### 💬 Your Coach says:\n{response}")
     if st.button("⬅️ Back"):
         st.session_state.show_coach = False
         st.rerun()
 
 def art_studio_page():
-    st.markdown('<h1 class="cyan-glow">🎨 AI Art Studio</h1>', unsafe_allow_html=True)
-    prompt = st.text_area("Describe your image:")
-    if prompt and st.button("🎨 Generate"):
-        with st.spinner("Creating art..."):
+    st.markdown('<h1 class="cyan-glow">🎨 AI Image Studio</h1>', unsafe_allow_html=True)
+    st.caption("Create stunning images with AI")
+    
+    prompt = st.text_area("Describe your image:", placeholder="A futuristic city at sunset with flying cars...", height=100)
+    
+    if prompt and st.button("🎨 Generate Image", type="primary"):
+        with st.spinner("Creating your masterpiece..."):
             image_bytes = generate_image(prompt)
             if image_bytes:
                 st.image(image_bytes, caption=f"AI Art: {prompt}")
                 st.download_button("📥 Download", image_bytes, "cyan8_art.png")
             else:
-                st.warning("⚠️ Add REPLICATE_API_KEY to secrets.")
+                st.warning("⚠️ Add REPLICATE_API_KEY to secrets or use the free version.")
+                related_images = generate_related_images(prompt, count=3)
+                if related_images:
+                    st.markdown("### 📸 Related Images")
+                    cols = st.columns(3)
+                    for i, img in enumerate(related_images):
+                        if i < 3:
+                            with cols[i]:
+                                st.image(img, use_container_width=True)
     if st.button("⬅️ Back"):
         st.session_state.show_art = False
         st.rerun()
 
+def settings_page():
+    st.markdown('<h1 class="cyan-glow">⚙️ Settings</h1>', unsafe_allow_html=True)
+    
+    st.markdown("### 👤 Account")
+    st.markdown(f"""
+    <div style="background:rgba(26,26,46,0.8);border-radius:10px;padding:15px;margin:10px 0;">
+        <p>📧 Email: <strong>{st.session_state.user_email or 'Not signed in'}</strong></p>
+        <p>🔑 Status: <strong>{'💎 Premium' if st.session_state.is_premium else '🆓 Free'}</strong></p>
+        <p>📅 Joined: {datetime.now().strftime('%B %d, %Y')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if not st.session_state.is_premium:
+        if st.button("⭐ Upgrade to Premium", use_container_width=True):
+            st.session_state.show_premium = True
+            st.rerun()
+    
+    st.markdown("### 🎨 Appearance")
+    st.markdown("""
+    <div style="background:rgba(26,26,46,0.8);border-radius:10px;padding:15px;margin:10px 0;">
+        <p>🌙 Theme: Dark (Default)</p>
+        <p>🎨 Accent Color: Cyan/Purple</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 🔔 General")
+    st.toggle("Notifications", True)
+    st.toggle("Voice Input", True)
+    
+    st.markdown("### 🔒 Security")
+    st.button("Change Password", use_container_width=True)
+    if st.button("Log Out", use_container_width=True):
+        st.session_state.signed_in = False
+        st.session_state.user_name = None
+        st.session_state.user_email = None
+        st.session_state.user_id = None
+        st.rerun()
+    
+    st.markdown("### 📊 System Info")
+    total_msgs = sum(len(c["messages"]) for c in st.session_state.chats)
+    st.markdown(f"""
+    <div style="background:rgba(26,26,46,0.8);border-radius:10px;padding:15px;margin:10px 0;">
+        <p>📝 Chats: <strong>{len(st.session_state.chats)}</strong></p>
+        <p>💬 Messages: <strong>{total_msgs}</strong></p>
+        <p>🧠 Memories: <strong>{len(st.session_state.memory_vault)}</strong></p>
+        <p>🧬 AI DNA: <strong>{st.session_state.ai_dna_messages}</strong></p>
+        <p>👥 Users: <strong>{st.session_state.total_users}</strong></p>
+        <p>📦 Size: <strong>~55MB</strong></p>
+        <p>⚡ Features: <strong>45+</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("⬅️ Back to Chat", use_container_width=True):
+        st.session_state.show_settings = False
+        st.rerun()
+
+def premium_page():
+    st.markdown('<h1 class="cyan-glow">⭐ Unlock Premium</h1>', unsafe_allow_html=True)
+    st.caption("Get unlimited access to all features")
+    
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("""
+        <div style="border:2px solid #CD7F32;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
+            <h3>🥉 Basic</h3>
+            <h2 style="color:#FFD700;">$0.99/mo</h2>
+            <p>✅ 100+ Languages</p>
+            <p>✅ 45+ Features</p>
+            <p>✅ Money Content</p>
+            <p>🔒 Limited Images</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
+        <div style="border:3px solid #FFD700;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
+            <div style="background:#FFD700;color:#000;padding:5px 12px;border-radius:12px;display:inline-block;margin-bottom:10px;">🔥 POPULAR</div>
+            <h3>🥈 Pro</h3>
+            <h2 style="color:#FFD700;">$3.99/mo</h2>
+            <p>✅ Everything Basic</p>
+            <p>✅ Unlimited Money Content</p>
+            <p>✅ Priority Support</p>
+            <p>✅ 50 Images/day</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown("""
+        <div style="border:2px solid #C0C0C0;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
+            <h3>🥇 Ultimate</h3>
+            <h2 style="color:#FFD700;">$9.99/mo</h2>
+            <p>✅ Everything Pro</p>
+            <p>✅ Lifetime Access</p>
+            <p>✅ VIP Support</p>
+            <p>✅ Unlimited Everything</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    st.markdown("### 💳 How to Pay")
+    st.markdown("""
+    <div class="glow-card">
+        <h4>Pay with Raenest/Geegpay</h4>
+        <p><strong>Account Name:</strong> Ikechukwu Nwanosike</p>
+        <p><strong>Bank Name:</strong> Lead Bank</p>
+        <p><strong>Account Number:</strong> 214199095571</p>
+        <p><strong>Routing Number:</strong> 101019644</p>
+        <p style="color:#888;font-size:12px;">⚠️ After payment, send transaction reference to support@cyan8.com</p>
+        <p style="color:#888;font-size:12px;">⏳ Premium will be unlocked within 24 hours</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("⬅️ Back to Chat", use_container_width=True):
+        st.session_state.show_premium = False
+        st.rerun()
+
 def sign_in_page():
     st.markdown(CYAN_LOGO, unsafe_allow_html=True)
-    st.markdown('<p style="text-align:center;font-size:18px;color:#ccc;">Make Money With AI — Smarter Than Ever</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center;font-size:18px;color:#ccc;">Your Everything AI — Smarter Than Ever</p>', unsafe_allow_html=True)
     st.markdown('<p style="text-align:center;color:#888;">100+ Languages | 45+ Features | 55MB | Free Forever</p>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -1277,31 +1237,72 @@ def sign_in_page():
                 st.session_state.sign_in_method = "Email"
                 st.session_state.user_id = 1
                 st.rerun()
+        st.divider()
+        st.caption("By signing in, you agree to our Terms of Service and Privacy Policy")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("📋 Terms", use_container_width=True):
+                st.session_state.show_terms = True
+                st.rerun()
+        with c2:
+            if st.button("🔒 Privacy", use_container_width=True):
+                st.session_state.show_privacy = True
+                st.rerun()
 
 def sidebar():
     with st.sidebar:
         st.markdown(CYAN_LOGO, unsafe_allow_html=True)
+        
         if st.session_state.signed_in:
             st.markdown(f"""
             <div style="padding:10px;background:rgba(26,26,46,0.8);border-radius:10px;margin:10px 0;border:1px solid rgba(0,229,255,0.2);">
-                <strong style="color:#fff;">{st.session_state.user_name}</strong>
+                <strong style="color:#fff;">👤 {st.session_state.user_name}</strong>
                 <br><small style="color:#888;">{st.session_state.user_email}</small>
+                <br><span style="color:#00E5FF;font-size:11px;">{st.session_state.sign_in_method} • {'💎 Premium' if st.session_state.is_premium else '🆓 Free'}</span>
             </div>
             """, unsafe_allow_html=True)
+        
+        # Search chats
+        st.text_input("🔍 Search chats...", placeholder="Type to search...", key="search_chats")
+        
+        # Pinned Chats
+        st.markdown("### 📌 Pinned")
+        if st.session_state.chats:
+            for chat in st.session_state.chats[:2]:
+                st.button(f"📌 {chat['title'][:20]}", key=f"pinned_{chat['id']}", use_container_width=True)
+        
+        # Recent Chats
+        st.markdown("### 🕐 Recents")
+        if st.session_state.chats:
+            for chat in st.session_state.chats[:5]:
+                ia = chat["id"] == st.session_state.current_chat_id
+                if st.button(f"💬 {chat['title'][:20]}", key=f"ch_{chat['id']}", use_container_width=True, type="primary" if ia else "secondary"):
+                    st.session_state.current_chat_id = chat["id"]
+                    st.rerun()
+        
+        st.divider()
+        
         language = st.selectbox("🌍 Language", list(LANGUAGES.keys()), index=list(LANGUAGES.keys()).index(st.session_state.language))
         if language != st.session_state.language:
             st.session_state.language = language
+        
         if st.session_state.is_premium:
-            st.success(f"⭐ {st.session_state.premium_tier} Premium")
+            st.success(f"💎 {st.session_state.premium_tier} Premium")
+        
         st.divider()
+        
         if st.button("➕ New Chat", use_container_width=True, type="primary"):
             create_chat()
             st.rerun()
+        
         st.divider()
+        
         nm = st.selectbox("🎯 Mode", list(AI_MODES.keys()), index=list(AI_MODES.keys()).index(st.session_state.ai_mode))
         if nm != st.session_state.ai_mode:
             st.session_state.ai_mode = nm
+        
         st.divider()
+        
         st.caption("🚀 FEATURES")
         c1, c2 = st.columns(2)
         with c1:
@@ -1336,18 +1337,21 @@ def sidebar():
                 st.session_state.show_viral = True
                 st.rerun()
         with c2:
+            if st.button("❓ Help", use_container_width=True):
+                st.session_state.show_help_center = True
+                st.rerun()
+        c1, c2 = st.columns(2)
+        with c1:
             if st.button("⚙️ Settings", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
+        with c2:
+            if st.button("⭐ Premium", use_container_width=True):
+                st.session_state.show_premium = True
+                st.rerun()
+        
         st.divider()
-        st.caption("📝 History")
-        if st.session_state.chats:
-            for chat in st.session_state.chats[:5]:
-                ia = chat["id"] == st.session_state.current_chat_id
-                if st.button(f"💬 {chat['title'][:15]}", key=f"ch_{chat['id']}", use_container_width=True, type="primary" if ia else "secondary"):
-                    st.session_state.current_chat_id = chat["id"]
-                    st.rerun()
-        st.divider()
+        
         if not st.session_state.is_premium:
             st.markdown("""
             <div style="background:linear-gradient(135deg,#00E5FF,#6C5CE7);border-radius:12px;padding:12px;text-align:center;animation:pulseGlow 2s infinite;">
@@ -1381,141 +1385,18 @@ elif st.session_state.show_coach:
 elif st.session_state.show_art:
     sidebar()
     art_studio_page()
-elif st.session_state.show_settings:
-    sidebar()
-    st.markdown('<h1 class="cyan-glow">⚙️ Settings</h1>', unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="glow-card">
-        <h3>📊 System Info</h3>
-        <p>📝 Chats: <strong>{len(st.session_state.chats)}</strong></p>
-        <p>💬 Messages: <strong>{sum(len(c['messages']) for c in st.session_state.chats)}</strong></p>
-        <p>🧠 Memories: <strong>{len(st.session_state.memory_vault)}</strong></p>
-        <p>🧬 AI DNA: <strong>{st.session_state.ai_dna_messages}</strong></p>
-        <p>🌍 Language: <strong>{st.session_state.language}</strong></p>
-        <p>👥 Users: <strong>{st.session_state.total_users}</strong></p>
-        <p>📦 Size: <strong>~55MB</strong></p>
-        <p>⚡ Features: <strong>45+</strong></p>
-        <p>💰 Money Content: <strong>{st.session_state.money_earnings}</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("⬅️ Back", use_container_width=True):
-        st.session_state.show_settings = False
-        st.rerun()
-elif st.session_state.show_premium:
-    sidebar()
-    st.markdown('<h1 class="cyan-glow">⭐ Unlock Premium</h1>', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("""
-        <div style="border:2px solid #CD7F32;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
-            <h3>🥉 Basic</h3>
-            <h2 style="color:#FFD700;">$0.99/mo</h2>
-            <p>✅ 100+ Languages</p>
-            <p>✅ 45+ Features</p>
-            <p>✅ Money Content</p>
-            <button class="money-button" style="margin-top:10px;">Coming Soon</button>
-        </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        st.markdown("""
-        <div style="border:3px solid #FFD700;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
-            <div style="background:#FFD700;color:#000;padding:5px 12px;border-radius:12px;display:inline-block;margin-bottom:10px;">🔥 POPULAR</div>
-            <h3>🥈 Pro</h3>
-            <h2 style="color:#FFD700;">$3.99/mo</h2>
-            <p>✅ Everything Basic</p>
-            <p>✅ Unlimited Money Content</p>
-            <p>✅ Priority Support</p>
-            <button class="money-button" style="margin-top:10px;">Coming Soon</button>
-        </div>
-        """, unsafe_allow_html=True)
-    with c3:
-        st.markdown("""
-        <div style="border:2px solid #C0C0C0;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
-            <h3>🥇 Ultimate</h3>
-            <h2 style="color:#FFD700;">$9.99/mo</h2>
-            <p>✅ Everything Pro</p>
-            <p>✅ Lifetime Access</p>
-            <p>✅ VIP Support</p>
-            <button class="money-button" style="margin-top:10px;">Coming Soon</button>
-        </div>
-        """, unsafe_allow_html=True)
-    if st.button("⬅️ Back"):
-        st.session_state.show_premium = False
-        st.rerun()
-elif st.session_state.show_features:
-    sidebar()
-    st.markdown('<h1 class="cyan-glow">🌟 45+ Features</h1>', unsafe_allow_html=True)
-    st.caption("No other AI on Earth has this many features for free.")
-    features = [
-        {"icon": "🧬", "name": "AI DNA", "premium": True},
-        {"icon": "🧠", "name": "Memory Vault", "premium": False},
-        {"icon": "🌐", "name": "Live Search", "premium": True},
-        {"icon": "🤖", "name": "AI Agent", "premium": True},
-        {"icon": "📄", "name": "Document Processing", "premium": True},
-        {"icon": "💻", "name": "Code Execution", "premium": True},
-        {"icon": "💪", "name": "AI Coach", "premium": True},
-        {"icon": "🎨", "name": "AI Art Studio", "premium": True},
-        {"icon": "🌍", "name": "100+ Languages", "premium": False},
-        {"icon": "🔗", "name": "App Connector", "premium": True},
-        {"icon": "💰", "name": "AI Money Maker", "premium": True},
-        {"icon": "📱", "name": "TikTok Creator", "premium": True},
-        {"icon": "🎬", "name": "YouTube Creator", "premium": True},
-        {"icon": "📸", "name": "Instagram Creator", "premium": True},
-        {"icon": "💼", "name": "Fiverr Gig", "premium": True},
-        {"icon": "📝", "name": "Upwork Proposal", "premium": True},
-        {"icon": "💪", "name": "Freelance Builder", "premium": True},
-    ]
-    cols = st.columns(3)
-    for i, f in enumerate(features):
-        with cols[i % 3]:
-            badge = '<span class="badge-premium">⭐ Premium</span>' if f['premium'] else '<span class="badge-free">🆓 Free</span>'
-            st.markdown(f"""
-            <div class="feature-card">
-                <div style="font-size:36px;">{f['icon']}</div>
-                <h4>{f['name']}</h4>
-                {badge}
-            </div>
-            """, unsafe_allow_html=True)
-    if st.button("⬅️ Back"):
-        st.session_state.show_features = False
-        st.rerun()
-elif st.session_state.show_labs:
-    sidebar()
-    st.markdown('<h1 class="cyan-glow">🧪 CYAN 8 Labs</h1>', unsafe_allow_html=True)
-    labs = [
-        {"icon": "📡", "name": "Offline AI", "status": "Beta"},
-        {"icon": "🎨", "name": "AI Art Generator", "status": "Beta"},
-        {"icon": "👁️", "name": "AI Witness", "status": "Alpha"},
-        {"icon": "🌙", "name": "Dream Recorder", "status": "Beta"},
-    ]
-    for lab in labs:
-        with st.expander(f"{lab['icon']} {lab['name']}"):
-            sc = "#4CAF50" if lab['status']=="Beta" else "#FFA500"
-            st.markdown(f"Status: <span style='background:{sc};color:#fff;padding:3px 10px;border-radius:10px;'>{lab['status']}</span>", unsafe_allow_html=True)
-    if st.button("⬅️ Back"):
-        st.session_state.show_labs = False
-        st.rerun()
-elif st.session_state.show_image_gen:
-    sidebar()
-    st.markdown('<h1 class="cyan-glow">🎨 AI Art Generator</h1>', unsafe_allow_html=True)
-    prompt = st.text_area("Describe the image:")
-    if prompt and st.button("🎨 Generate", type="primary"):
-        with st.spinner("Creating..."):
-            image_bytes = generate_image(prompt)
-            if image_bytes:
-                st.image(image_bytes, caption=f"AI Generated: {prompt}")
-                st.download_button("📥 Download", image_bytes, "cyan8_art.png")
-            else:
-                st.warning("⚠️ Add REPLICATE_API_KEY to secrets.")
-    if st.button("⬅️ Back"):
-        st.session_state.show_image_gen = False
-        st.rerun()
-elif st.session_state.show_help_center:
-    sidebar()
-    help_center_page()
 elif st.session_state.show_viral:
     sidebar()
     viral_features_page()
+elif st.session_state.show_help_center:
+    sidebar()
+    help_center_page()
+elif st.session_state.show_settings:
+    sidebar()
+    settings_page()
+elif st.session_state.show_premium:
+    sidebar()
+    premium_page()
 elif st.session_state.show_terms:
     sidebar()
     terms_page()
@@ -1526,26 +1407,107 @@ elif not st.session_state.signed_in:
     sign_in_page()
 else:
     sidebar()
+    
+    # Top bar with New Chat button (like ChatGPT)
+    col1, col2, col3 = st.columns([4, 1, 1])
+    with col1:
+        pass  # Logo is in sidebar
+    with col2:
+        if st.button("➕ New Chat", use_container_width=True, type="primary"):
+            create_chat()
+            st.rerun()
+    with col3:
+        if st.session_state.is_premium:
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:12px;padding:8px 12px;text-align:center;">
+                <strong style="color:#000;">💎 Premium</strong>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            if st.button("⭐ Upgrade", use_container_width=True):
+                st.session_state.show_premium = True
+                st.rerun()
+    
     if not st.session_state.chats:
         create_chat()
     chat = get_chat()
     if chat is None and st.session_state.chats:
         st.session_state.current_chat_id = st.session_state.chats[0]["id"]
         chat = st.session_state.chats[0]
+    
     if chat:
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-            <h3 style="color:#fff;">{chat.get('title', 'New Chat')}</h3>
-            <span style="font-size:11px;color:#888;background:rgba(0,229,255,0.2);padding:4px 14px;border-radius:12px;">🌍 {st.session_state.language}</span>
-            <span style="font-size:11px;color:#888;background:rgba(0,229,255,0.2);padding:4px 14px;border-radius:12px;">🎯 {chat.get('mode', 'General')}</span>
+            <span style="font-size:14px;color:#888;">🌍 {st.session_state.language}</span>
+            <span style="font-size:14px;color:#888;">🎯 {chat.get('mode', 'General')}</span>
+            <span style="font-size:14px;color:#888;">🧬 {st.session_state.ai_dna_messages}</span>
         </div>
         """, unsafe_allow_html=True)
+        
         for msg in chat["messages"]:
             with st.chat_message(msg["role"]):
                 if msg.get("image"):
                     st.image(msg["image"], width=250)
                 st.markdown(msg["content"])
-        prompt = st.chat_input("Ask me anything — I'll help you make money!")
+        
+        tabs = st.tabs(["💬 Chat", "📸 Image Analysis", "🎨 Image Generation", "📁 Files"])
+        
+        with tabs[0]:
+            prompt = st.chat_input("Ask me anything — I'll help you make money!")
+        
+        with tabs[1]:
+            up = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+            if up:
+                st.image(up, width=250)
+                task = st.text_input("What should I do?", placeholder="Explain, solve, read, summarize...")
+                if task and st.button("🔍 Analyze", type="primary"):
+                    desc, img = handle_image(up)
+                    if img:
+                        chat["messages"].append({"role":"user","content":f"📸 {task}","image":img})
+                        with st.spinner("Analyzing image..."):
+                            ans = get_ai_response(task, chat.get("mode","General"), st.session_state.language)
+                            chat["messages"].append({"role":"assistant","content":ans,"image":None})
+                            if len(chat["messages"])==2:
+                                chat["title"] = generate_title(task)
+                            st.rerun()
+        
+        with tabs[2]:
+            st.caption("🎨 Generate images from text")
+            img_prompt = st.text_input("Describe an image:", placeholder="A futuristic city at night...")
+            if img_prompt and st.button("🎨 Generate", type="primary"):
+                with st.spinner("Creating..."):
+                    img_bytes = generate_image(img_prompt)
+                    if img_bytes:
+                        st.image(img_bytes, caption=f"AI: {img_prompt}")
+                        st.download_button("📥 Download", img_bytes, "cyan8_art.png")
+                    else:
+                        st.warning("⚠️ Replicate API limit reached. Using free generation...")
+                        related_images = generate_related_images(img_prompt, count=5)
+                        if related_images:
+                            st.markdown("### 📸 RELATED IMAGES")
+                            cols = st.columns(5)
+                            for i, img in enumerate(related_images):
+                                if i < 5:
+                                    with cols[i]:
+                                        st.image(img, use_container_width=True)
+        
+        with tabs[3]:
+            st.caption("📁 Upload and process documents")
+            doc_file = st.file_uploader("Choose a file", type=["pdf", "txt", "csv", "xlsx", "xls"], label_visibility="collapsed")
+            if doc_file:
+                file_bytes = doc_file.read()
+                ext = doc_file.name.split('.')[-1].lower()
+                with st.spinner("Processing..."):
+                    if ext == "pdf":
+                        result = process_pdf(file_bytes)
+                    elif ext in ["csv", "xlsx", "xls"]:
+                        result = process_excel(file_bytes)
+                    elif ext == "txt":
+                        result = process_text_file(file_bytes)
+                    else:
+                        result = "Unsupported file type"
+                    st.text(result[:2000])
+        
         if prompt:
             chat["messages"].append({"role": "user", "content": prompt, "image": None})
             with st.chat_message("user"):
@@ -1555,6 +1517,16 @@ else:
                     enable_search = "search" in prompt.lower() or "find" in prompt.lower()
                     ans = get_enhanced_response(prompt, chat.get("mode", "General"), st.session_state.language, enable_search)
                     st.markdown(ans)
+                    
+                    # Generate related images (like ChatGPT!)
+                    related_images = generate_related_images(prompt, count=5)
+                    if related_images:
+                        st.markdown("### 📸 RELATED IMAGES")
+                        cols = st.columns(5)
+                        for i, img in enumerate(related_images):
+                            if i < 5:
+                                with cols[i]:
+                                    st.image(img, use_container_width=True)
             chat["messages"].append({"role": "assistant", "content": ans, "image": None})
             if any(w in prompt.lower() for w in ["remember", "my name", "i am", "i have"]):
                 remember_this(prompt[:200])
