@@ -457,6 +457,8 @@ def generate_referral_code():
 
 def get_daily_challenge():
     today = datetime.now().strftime("%Y-%m-%d")
+    if "daily_challenge" not in st.session_state:
+        st.session_state.daily_challenge = None
     if st.session_state.daily_challenge != today:
         challenge = random.choice([
             {"title": "Riddle Master", "description": "Solve today's AI-generated riddle", "icon": "🧩"},
@@ -784,7 +786,7 @@ def money_maker_page():
     for i, platform in enumerate(platforms):
         with col1 if i % 3 == 0 else col2 if i % 3 == 1 else col3:
             data = MONEY_PLATFORMS[platform]
-            if st.button(f"{data['icon']} {platform}", use_container_width=True, key=f"money_{platform}"):
+            if st.button(f"{data['icon']} {platform}", use_container_width=True, key=f"money_btn_{platform}"):
                 st.session_state.selected_money_platform = platform
                 st.rerun()
     
@@ -802,7 +804,7 @@ def money_maker_page():
         
         topic = st.text_input(f"What's your topic for {platform}?", placeholder="e.g., Cooking, Gaming, Tech, Business...")
         
-        if st.button("💰 Generate Money Content", type="primary", use_container_width=True):
+        if st.button("💰 Generate Money Content", type="primary", use_container_width=True, key="gen_money_btn"):
             if topic:
                 with st.spinner("Creating your money-making content..."):
                     content = generate_money_content(platform, selected_template, topic, st.session_state.language)
@@ -831,7 +833,7 @@ def money_maker_page():
     for tip in tips:
         st.markdown(f"✅ {tip}")
     
-    if st.button("⬅️ Back to Chat", use_container_width=True):
+    if st.button("⬅️ Back to Chat", use_container_width=True, key="money_back_btn"):
         st.session_state.show_money = False
         st.rerun()
 
@@ -850,19 +852,19 @@ def viral_features_page():
     st.markdown("### 📤 Share CYAN 8")
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        if st.button("🐦 Twitter", use_container_width=True):
+        if st.button("🐦 Twitter", use_container_width=True, key="share_twitter"):
             st.success("✅ Share link copied!")
     with c2:
-        if st.button("💬 WhatsApp", use_container_width=True):
+        if st.button("💬 WhatsApp", use_container_width=True, key="share_whatsapp"):
             st.success("✅ Share link copied!")
     with c3:
-        if st.button("📘 Facebook", use_container_width=True):
+        if st.button("📘 Facebook", use_container_width=True, key="share_facebook"):
             st.success("✅ Share link copied!")
     with c4:
-        if st.button("📱 TikTok", use_container_width=True):
+        if st.button("📱 TikTok", use_container_width=True, key="share_tiktok"):
             st.success("✅ Share link copied!")
     with c5:
-        if st.button("🔗 Copy Link", use_container_width=True):
+        if st.button("🔗 Copy Link", use_container_width=True, key="copy_link"):
             st.success("✅ Link copied!")
     
     if not st.session_state.referral_code:
@@ -874,7 +876,7 @@ def viral_features_page():
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("⬅️ Back to Chat", use_container_width=True):
+    if st.button("⬅️ Back to Chat", use_container_width=True, key="viral_back_btn"):
         st.session_state.show_viral = False
         st.rerun()
 
@@ -912,13 +914,13 @@ def help_center_page():
             "Payment Methods": "Credit cards, Google Pay, Apple Pay."
         }
     }
-    selected_category = st.radio("📚 Categories", list(categories.keys()), horizontal=True)
+    selected_category = st.radio("📚 Categories", list(categories.keys()), horizontal=True, key="help_category")
     if selected_category:
         articles = categories[selected_category]
         for title, content in articles.items():
             with st.expander(f"📖 {title}"):
                 st.write(content)
-    if st.button("⬅️ Back to Chat", use_container_width=True):
+    if st.button("⬅️ Back to Chat", use_container_width=True, key="help_back_btn"):
         st.session_state.show_help_center = False
         st.rerun()
 
@@ -958,7 +960,7 @@ You agree NOT to:
 ## 6. Contact
 Email: support@cyan8.com
 """)
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="terms_back_btn"):
         st.session_state.show_terms = False
         st.rerun()
 
@@ -998,25 +1000,25 @@ We share minimal data with:
 ## 6. Contact
 Privacy questions? Email: privacy@cyan8.com
 """)
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="privacy_back_btn"):
         st.session_state.show_privacy = False
         st.rerun()
 
 def search_page():
     st.markdown('<h1 class="cyan-glow">🔍 Live Search</h1>', unsafe_allow_html=True)
-    query = st.text_input("What would you like to search for?")
-    if query and st.button("🔍 Search", type="primary"):
+    query = st.text_input("What would you like to search for?", key="search_query")
+    if query and st.button("🔍 Search", type="primary", key="search_btn"):
         with st.spinner("Searching..."):
             results = search_web(query)
             st.markdown("### 🔍 Search Results:")
             st.markdown(results)
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="search_back_btn"):
         st.session_state.show_search = False
         st.rerun()
 
 def document_processing_page():
     st.markdown('<h1 class="cyan-glow">📄 Document Processing</h1>', unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Choose a file", type=["pdf", "txt", "csv", "xlsx", "xls"])
+    uploaded_file = st.file_uploader("Choose a file", type=["pdf", "txt", "csv", "xlsx", "xls"], key="doc_upload")
     if uploaded_file:
         file_bytes = uploaded_file.read()
         ext = uploaded_file.name.split('.')[-1].lower()
@@ -1030,28 +1032,28 @@ def document_processing_page():
             else:
                 result = "Unsupported file type"
             st.text(result[:2000])
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="doc_back_btn"):
         st.session_state.show_document = False
         st.rerun()
 
 def agent_mode_page():
     st.markdown('<h1 class="cyan-glow">🤖 AI Agent Mode</h1>', unsafe_allow_html=True)
-    task = st.text_area("What complex task would you like me to handle?")
-    if task and st.button("🚀 Execute Task", type="primary"):
+    task = st.text_area("What complex task would you like me to handle?", key="agent_task")
+    if task and st.button("🚀 Execute Task", type="primary", key="agent_execute_btn"):
         with st.spinner("Agent working..."):
             steps = break_down_task(task)
             response = ai_agent_execute(task, steps)
             st.markdown(response)
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="agent_back_btn"):
         st.session_state.show_agent = False
         st.rerun()
 
 def coaching_page():
     st.markdown('<h1 class="cyan-glow">💪 AI Coaching</h1>', unsafe_allow_html=True)
     coach_types = ["Life Coach", "Career Coach", "Fitness Coach", "Study Coach", "Business Coach"]
-    coach_type = st.selectbox("Choose your coach:", coach_types)
-    question = st.text_area("What would you like coaching on?")
-    if question and st.button("Get Coaching", type="primary"):
+    coach_type = st.selectbox("Choose your coach:", coach_types, key="coach_type")
+    question = st.text_area("What would you like coaching on?", key="coach_question")
+    if question and st.button("Get Coaching", type="primary", key="coach_btn"):
         with st.spinner("Your coach is thinking..."):
             coach_prompts = {
                 "Life Coach": "You are a life coach. Help with personal development.",
@@ -1062,7 +1064,7 @@ def coaching_page():
             }
             response = get_ai_response(question, coach_prompts.get(coach_type, "You are a helpful coach."), st.session_state.language)
             st.markdown(f"### 💬 Your Coach says:\n{response}")
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="coach_back_btn"):
         st.session_state.show_coach = False
         st.rerun()
 
@@ -1070,14 +1072,14 @@ def art_studio_page():
     st.markdown('<h1 class="cyan-glow">🎨 AI Image Studio</h1>', unsafe_allow_html=True)
     st.caption("Create stunning images with AI")
     
-    prompt = st.text_area("Describe your image:", placeholder="A futuristic city at sunset with flying cars...", height=100)
+    prompt = st.text_area("Describe your image:", placeholder="A futuristic city at sunset with flying cars...", height=100, key="art_prompt")
     
-    if prompt and st.button("🎨 Generate Image", type="primary"):
+    if prompt and st.button("🎨 Generate Image", type="primary", key="art_generate_btn"):
         with st.spinner("Creating your masterpiece..."):
             image_bytes = generate_image(prompt)
             if image_bytes:
                 st.image(image_bytes, caption=f"AI Art: {prompt}")
-                st.download_button("📥 Download", image_bytes, "cyan8_art.png")
+                st.download_button("📥 Download", image_bytes, "cyan8_art.png", key="art_download")
             else:
                 st.warning("⚠️ Add REPLICATE_API_KEY to secrets or use the free version.")
                 related_images = generate_related_images(prompt, count=3)
@@ -1088,7 +1090,7 @@ def art_studio_page():
                         if i < 3:
                             with cols[i]:
                                 st.image(img, use_container_width=True)
-    if st.button("⬅️ Back"):
+    if st.button("⬅️ Back", key="art_back_btn"):
         st.session_state.show_art = False
         st.rerun()
 
@@ -1105,7 +1107,7 @@ def settings_page():
     """, unsafe_allow_html=True)
     
     if not st.session_state.is_premium:
-        if st.button("⭐ Upgrade to Premium", use_container_width=True):
+        if st.button("⭐ Upgrade to Premium", use_container_width=True, key="settings_upgrade_btn"):
             st.session_state.show_premium = True
             st.rerun()
     
@@ -1118,12 +1120,12 @@ def settings_page():
     """, unsafe_allow_html=True)
     
     st.markdown("### 🔔 General")
-    st.toggle("Notifications", True)
-    st.toggle("Voice Input", True)
+    st.toggle("Notifications", True, key="settings_notifications")
+    st.toggle("Voice Input", True, key="settings_voice")
     
     st.markdown("### 🔒 Security")
-    st.button("Change Password", use_container_width=True)
-    if st.button("Log Out", use_container_width=True):
+    st.button("Change Password", use_container_width=True, key="settings_change_password")
+    if st.button("Log Out", use_container_width=True, key="settings_logout"):
         st.session_state.signed_in = False
         st.session_state.user_name = None
         st.session_state.user_email = None
@@ -1144,7 +1146,7 @@ def settings_page():
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("⬅️ Back to Chat", use_container_width=True):
+    if st.button("⬅️ Back to Chat", use_container_width=True, key="settings_back_btn"):
         st.session_state.show_settings = False
         st.rerun()
 
@@ -1202,7 +1204,7 @@ def premium_page():
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("⬅️ Back to Chat", use_container_width=True):
+    if st.button("⬅️ Back to Chat", use_container_width=True, key="premium_back_btn"):
         st.session_state.show_premium = False
         st.rerun()
 
@@ -1212,14 +1214,14 @@ def sign_in_page():
     st.markdown('<p style="text-align:center;color:#888;">100+ Languages | 45+ Features | 55MB | Free Forever</p>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🔵 Continue with Google", use_container_width=True):
+        if st.button("🔵 Continue with Google", use_container_width=True, key="signin_google"):
             st.session_state.signed_in = True
             st.session_state.user_name = "Student"
             st.session_state.user_email = "student@gmail.com"
             st.session_state.sign_in_method = "Google"
             st.session_state.user_id = 1
             st.rerun()
-        if st.button("⚪ Continue with Apple", use_container_width=True):
+        if st.button("⚪ Continue with Apple", use_container_width=True, key="signin_apple"):
             st.session_state.signed_in = True
             st.session_state.user_name = "Student"
             st.session_state.user_email = "student@icloud.com"
@@ -1227,9 +1229,9 @@ def sign_in_page():
             st.session_state.user_id = 1
             st.rerun()
         st.divider()
-        email = st.text_input("📧 Email")
-        password = st.text_input("🔒 Password", type="password")
-        if st.button("Sign In", use_container_width=True, type="primary"):
+        email = st.text_input("📧 Email", key="signin_email")
+        password = st.text_input("🔒 Password", type="password", key="signin_password")
+        if st.button("Sign In", use_container_width=True, type="primary", key="signin_btn"):
             if email:
                 st.session_state.signed_in = True
                 st.session_state.user_name = email.split("@")[0]
@@ -1241,11 +1243,11 @@ def sign_in_page():
         st.caption("By signing in, you agree to our Terms of Service and Privacy Policy")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("📋 Terms", use_container_width=True):
+            if st.button("📋 Terms", use_container_width=True, key="signin_terms"):
                 st.session_state.show_terms = True
                 st.rerun()
         with c2:
-            if st.button("🔒 Privacy", use_container_width=True):
+            if st.button("🔒 Privacy", use_container_width=True, key="signin_privacy"):
                 st.session_state.show_privacy = True
                 st.rerun()
 
@@ -1282,7 +1284,7 @@ def sidebar():
         
         st.divider()
         
-        language = st.selectbox("🌍 Language", list(LANGUAGES.keys()), index=list(LANGUAGES.keys()).index(st.session_state.language))
+        language = st.selectbox("🌍 Language", list(LANGUAGES.keys()), index=list(LANGUAGES.keys()).index(st.session_state.language), key="sidebar_language")
         if language != st.session_state.language:
             st.session_state.language = language
         
@@ -1291,13 +1293,13 @@ def sidebar():
         
         st.divider()
         
-        if st.button("➕ New Chat", use_container_width=True, type="primary"):
+        if st.button("➕ New Chat", use_container_width=True, type="primary", key="sidebar_new_chat"):
             create_chat()
             st.rerun()
         
         st.divider()
         
-        nm = st.selectbox("🎯 Mode", list(AI_MODES.keys()), index=list(AI_MODES.keys()).index(st.session_state.ai_mode))
+        nm = st.selectbox("🎯 Mode", list(AI_MODES.keys()), index=list(AI_MODES.keys()).index(st.session_state.ai_mode), key="sidebar_mode")
         if nm != st.session_state.ai_mode:
             st.session_state.ai_mode = nm
         
@@ -1306,47 +1308,47 @@ def sidebar():
         st.caption("🚀 FEATURES")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("💰 Money", use_container_width=True):
+            if st.button("💰 Money", use_container_width=True, key="sidebar_money"):
                 st.session_state.show_money = True
                 st.rerun()
         with c2:
-            if st.button("🔍 Search", use_container_width=True):
+            if st.button("🔍 Search", use_container_width=True, key="sidebar_search"):
                 st.session_state.show_search = True
                 st.rerun()
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("📄 Docs", use_container_width=True):
+            if st.button("📄 Docs", use_container_width=True, key="sidebar_docs"):
                 st.session_state.show_document = True
                 st.rerun()
         with c2:
-            if st.button("🤖 Agent", use_container_width=True):
+            if st.button("🤖 Agent", use_container_width=True, key="sidebar_agent"):
                 st.session_state.show_agent = True
                 st.rerun()
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("💪 Coach", use_container_width=True):
+            if st.button("💪 Coach", use_container_width=True, key="sidebar_coach"):
                 st.session_state.show_coach = True
                 st.rerun()
         with c2:
-            if st.button("🎨 Art", use_container_width=True):
+            if st.button("🎨 Art", use_container_width=True, key="sidebar_art"):
                 st.session_state.show_art = True
                 st.rerun()
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🚀 Viral", use_container_width=True):
+            if st.button("🚀 Viral", use_container_width=True, key="sidebar_viral"):
                 st.session_state.show_viral = True
                 st.rerun()
         with c2:
-            if st.button("❓ Help", use_container_width=True):
+            if st.button("❓ Help", use_container_width=True, key="sidebar_help"):
                 st.session_state.show_help_center = True
                 st.rerun()
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("⚙️ Settings", use_container_width=True):
+            if st.button("⚙️ Settings", use_container_width=True, key="sidebar_settings"):
                 st.session_state.show_settings = True
                 st.rerun()
         with c2:
-            if st.button("⭐ Premium", use_container_width=True):
+            if st.button("⭐ Premium", use_container_width=True, key="sidebar_premium"):
                 st.session_state.show_premium = True
                 st.rerun()
         
@@ -1359,7 +1361,7 @@ def sidebar():
                 <br><small style="color:#fff;">From $0.99/mo</small>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🚀 Upgrade Now", use_container_width=True, type="primary"):
+            if st.button("🚀 Upgrade Now", use_container_width=True, type="primary", key="sidebar_upgrade"):
                 st.session_state.show_premium = True
                 st.rerun()
 
@@ -1413,7 +1415,7 @@ else:
     with col1:
         pass  # Logo is in sidebar
     with col2:
-        if st.button("➕ New Chat", use_container_width=True, type="primary"):
+        if st.button("➕ New Chat", use_container_width=True, type="primary", key="top_new_chat"):
             create_chat()
             st.rerun()
     with col3:
@@ -1424,7 +1426,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
         else:
-            if st.button("⭐ Upgrade", use_container_width=True):
+            if st.button("⭐ Upgrade", use_container_width=True, key="top_upgrade"):
                 st.session_state.show_premium = True
                 st.rerun()
     
@@ -1456,11 +1458,11 @@ else:
             prompt = st.chat_input("Ask me anything — I'll help you make money!")
         
         with tabs[1]:
-            up = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+            up = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"], label_visibility="collapsed", key="image_upload")
             if up:
                 st.image(up, width=250)
-                task = st.text_input("What should I do?", placeholder="Explain, solve, read, summarize...")
-                if task and st.button("🔍 Analyze", type="primary"):
+                task = st.text_input("What should I do?", placeholder="Explain, solve, read, summarize...", key="image_task")
+                if task and st.button("🔍 Analyze", type="primary", key="image_analyze_btn"):
                     desc, img = handle_image(up)
                     if img:
                         chat["messages"].append({"role":"user","content":f"📸 {task}","image":img})
@@ -1473,13 +1475,13 @@ else:
         
         with tabs[2]:
             st.caption("🎨 Generate images from text")
-            img_prompt = st.text_input("Describe an image:", placeholder="A futuristic city at night...")
-            if img_prompt and st.button("🎨 Generate", type="primary"):
+            img_prompt = st.text_input("Describe an image:", placeholder="A futuristic city at night...", key="img_gen_prompt")
+            if img_prompt and st.button("🎨 Generate", type="primary", key="img_gen_btn"):
                 with st.spinner("Creating..."):
                     img_bytes = generate_image(img_prompt)
                     if img_bytes:
                         st.image(img_bytes, caption=f"AI: {img_prompt}")
-                        st.download_button("📥 Download", img_bytes, "cyan8_art.png")
+                        st.download_button("📥 Download", img_bytes, "cyan8_art.png", key="img_download")
                     else:
                         st.warning("⚠️ Replicate API limit reached. Using free generation...")
                         related_images = generate_related_images(img_prompt, count=5)
@@ -1493,7 +1495,7 @@ else:
         
         with tabs[3]:
             st.caption("📁 Upload and process documents")
-            doc_file = st.file_uploader("Choose a file", type=["pdf", "txt", "csv", "xlsx", "xls"], label_visibility="collapsed")
+            doc_file = st.file_uploader("Choose a file", type=["pdf", "txt", "csv", "xlsx", "xls"], label_visibility="collapsed", key="doc_upload_main")
             if doc_file:
                 file_bytes = doc_file.read()
                 ext = doc_file.name.split('.')[-1].lower()
