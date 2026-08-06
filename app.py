@@ -80,35 +80,24 @@ CYAN_LOGO = """
 """
 
 # ═══════════════════════════════════════════════════════
-# ANIMATED BACKGROUND
+# ANIMATED BACKGROUND (PURE BLACK LIKE DEEPSEEK)
 # ═══════════════════════════════════════════════════════
 
 st.markdown("""
 <style>
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
     @keyframes float {
-        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-        50% { transform: translateY(-30px) rotate(10deg); opacity: 0.8; }
-    }
-    @keyframes pulseGlow {
-        0%, 100% { opacity: 0.6; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.05); }
+        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.2; }
+        50% { transform: translateY(-20px) rotate(5deg); opacity: 0.5; }
     }
     .stApp {
-        background: linear-gradient(-45deg, #0a0a1a, #1a0a2e, #0d1a2e, #0a0a1a);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        background: #0a0a0a;
     }
     .particle {
         position: fixed;
         border-radius: 50%;
         pointer-events: none;
-        background: radial-gradient(circle, rgba(108,92,231,0.15), transparent);
-        animation: float 20s infinite ease-in-out;
+        background: radial-gradient(circle, rgba(108,92,231,0.1), transparent);
+        animation: float 15s infinite ease-in-out;
         z-index: 0;
     }
     .glow-card {
@@ -150,7 +139,6 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
-        animation: pulseGlow 3s ease-in-out infinite;
     }
     .money-glow {
         background: linear-gradient(135deg, #FFD700, #FFA500, #FF6B00);
@@ -218,7 +206,7 @@ st.markdown("""
         width: 8px;
     }
     ::-webkit-scrollbar-track {
-        background: #0a0a1a;
+        background: #0a0a0a;
     }
     ::-webkit-scrollbar-thumb {
         background: linear-gradient(135deg, #6C5CE7, #EC4899);
@@ -238,7 +226,7 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(108,92,231,0.2);
     }
     div[data-testid="stSidebar"] {
-        background: rgba(10,10,26,0.95);
+        background: rgba(10,10,10,0.95);
         backdrop-filter: blur(10px);
         border-right: 1px solid rgba(108,92,231,0.1);
     }
@@ -247,10 +235,18 @@ st.markdown("""
         font-weight: 600;
         transition: all 0.3s ease;
         border: 1px solid rgba(108,92,231,0.3);
+        background: transparent;
+        color: #fff;
     }
     .stButton > button:hover {
         transform: scale(1.02);
         border-color: #6C5CE7;
+        background: rgba(108,92,231,0.2);
+    }
+    .stButton > button[data-baseweb="button"] {
+        background: linear-gradient(135deg, #6C5CE7, #00E5FF);
+        color: white;
+        border: none;
     }
 </style>
 <div class="particle" style="width: 300px; height: 300px; top: 10%; left: 5%; animation-delay: 0s;"></div>
@@ -685,19 +681,6 @@ def generate_image(prompt):
     except Exception as e:
         return None
 
-def generate_related_images(query, count=5):
-    """Generate 5 related images using Pollinations AI (FREE!)"""
-    images = []
-    for i in range(count):
-        try:
-            url = f"https://pollinations.ai/p/{query.replace(' ', '_')}_{i}?width=400&height=400&nologo=true"
-            response = requests.get(url, timeout=10)
-            if response.status_code == 200:
-                images.append(response.content)
-        except:
-            continue
-    return images
-
 def generate_money_content(platform, template, topic, language="English"):
     prompts = {
         "TikTok": {
@@ -909,9 +892,9 @@ def help_center_page():
             "Encryption": "Encrypted at rest and in transit."
         },
         "💰 Billing & Premium": {
-            "Premium Plans": "Basic ($0.99/mo), Pro ($3.99/mo), Ultimate ($9.99/mo)",
+            "Premium Plans": "Basic ($0.99/mo), Pro ($3.99/mo), Ultimate ($9.99/mo), Lifetime ($49.99)",
             "Lifetime Access": "$49.99 one-time",
-            "Payment Methods": "Credit cards, Google Pay, Apple Pay."
+            "Payment Methods": "Raenest/Geegpay"
         }
     }
     selected_category = st.radio("📚 Categories", list(categories.keys()), horizontal=True, key="help_category")
@@ -1081,15 +1064,7 @@ def art_studio_page():
                 st.image(image_bytes, caption=f"AI Art: {prompt}")
                 st.download_button("📥 Download", image_bytes, "cyan8_art.png", key="art_download")
             else:
-                st.warning("⚠️ Add REPLICATE_API_KEY to secrets or use the free version.")
-                related_images = generate_related_images(prompt, count=3)
-                if related_images:
-                    st.markdown("### 📸 Related Images")
-                    cols = st.columns(3)
-                    for i, img in enumerate(related_images):
-                        if i < 3:
-                            with cols[i]:
-                                st.image(img, use_container_width=True)
+                st.warning("⚠️ Add REPLICATE_API_KEY to secrets.")
     if st.button("⬅️ Back", key="art_back_btn"):
         st.session_state.show_art = False
         st.rerun()
@@ -1114,7 +1089,7 @@ def settings_page():
     st.markdown("### 🎨 Appearance")
     st.markdown("""
     <div style="background:rgba(26,26,46,0.8);border-radius:10px;padding:15px;margin:10px 0;">
-        <p>🌙 Theme: Dark (Default)</p>
+        <p>🌙 Theme: Dark</p>
         <p>🎨 Accent Color: Cyan/Purple</p>
     </div>
     """, unsafe_allow_html=True)
@@ -1154,7 +1129,9 @@ def premium_page():
     st.markdown('<h1 class="cyan-glow">⭐ Unlock Premium</h1>', unsafe_allow_html=True)
     st.caption("Get unlimited access to all features")
     
-    c1, c2, c3 = st.columns(3)
+    # 4 columns: Basic, Pro, Ultimate, Lifetime
+    c1, c2, c3, c4 = st.columns(4)
+    
     with c1:
         st.markdown("""
         <div style="border:2px solid #CD7F32;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
@@ -1166,6 +1143,7 @@ def premium_page():
             <p>🔒 Limited Images</p>
         </div>
         """, unsafe_allow_html=True)
+    
     with c2:
         st.markdown("""
         <div style="border:3px solid #FFD700;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
@@ -1178,15 +1156,28 @@ def premium_page():
             <p>✅ 50 Images/day</p>
         </div>
         """, unsafe_allow_html=True)
+    
     with c3:
         st.markdown("""
         <div style="border:2px solid #C0C0C0;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
             <h3>🥇 Ultimate</h3>
             <h2 style="color:#FFD700;">$9.99/mo</h2>
             <p>✅ Everything Pro</p>
-            <p>✅ Lifetime Access</p>
             <p>✅ VIP Support</p>
             <p>✅ Unlimited Everything</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with c4:
+        st.markdown("""
+        <div style="border:2px solid #FF6B6B;border-radius:20px;padding:20px;text-align:center;background:rgba(26,26,46,0.8);">
+            <div style="background:#FF6B6B;color:#fff;padding:5px 12px;border-radius:12px;display:inline-block;margin-bottom:10px;">⭐ BEST VALUE</div>
+            <h3>💎 Lifetime</h3>
+            <h2 style="color:#FFD700;">$49.99</h2>
+            <p>✅ ALL features FOREVER</p>
+            <p>✅ No monthly fees</p>
+            <p>✅ One payment</p>
+            <p>✅ VIP Support</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1199,6 +1190,7 @@ def premium_page():
         <p><strong>Bank Name:</strong> Lead Bank</p>
         <p><strong>Account Number:</strong> 214199095571</p>
         <p><strong>Routing Number:</strong> 101019644</p>
+        <p style="color:#FFD700;font-size:16px;"><strong>💰 Lifetime Payment: $49.99</strong></p>
         <p style="color:#888;font-size:12px;">⚠️ After payment, send transaction reference to support@cyan8.com</p>
         <p style="color:#888;font-size:12px;">⏳ Premium will be unlocked within 24 hours</p>
     </div>
@@ -1293,70 +1285,53 @@ def sidebar():
         
         st.divider()
         
-        if st.button("➕ New Chat", use_container_width=True, type="primary", key="sidebar_new_chat"):
-            create_chat()
+        st.caption("🚀 FEATURES")
+        
+        if st.button("💰 Money Maker", use_container_width=True, key="sidebar_money"):
+            st.session_state.show_money = True
             st.rerun()
         
-        st.divider()
+        if st.button("🤖 AI Agent", use_container_width=True, key="sidebar_agent"):
+            st.session_state.show_agent = True
+            st.rerun()
         
-        nm = st.selectbox("🎯 Mode", list(AI_MODES.keys()), index=list(AI_MODES.keys()).index(st.session_state.ai_mode), key="sidebar_mode")
-        if nm != st.session_state.ai_mode:
-            st.session_state.ai_mode = nm
+        if st.button("💪 AI Coach", use_container_width=True, key="sidebar_coach"):
+            st.session_state.show_coach = True
+            st.rerun()
         
-        st.divider()
+        if st.button("🎨 Image Studio", use_container_width=True, key="sidebar_art"):
+            st.session_state.show_art = True
+            st.rerun()
         
-        st.caption("🚀 FEATURES")
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("💰 Money", use_container_width=True, key="sidebar_money"):
-                st.session_state.show_money = True
-                st.rerun()
-        with c2:
-            if st.button("🔍 Search", use_container_width=True, key="sidebar_search"):
-                st.session_state.show_search = True
-                st.rerun()
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("📄 Docs", use_container_width=True, key="sidebar_docs"):
-                st.session_state.show_document = True
-                st.rerun()
-        with c2:
-            if st.button("🤖 Agent", use_container_width=True, key="sidebar_agent"):
-                st.session_state.show_agent = True
-                st.rerun()
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("💪 Coach", use_container_width=True, key="sidebar_coach"):
-                st.session_state.show_coach = True
-                st.rerun()
-        with c2:
-            if st.button("🎨 Art", use_container_width=True, key="sidebar_art"):
-                st.session_state.show_art = True
-                st.rerun()
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("🚀 Viral", use_container_width=True, key="sidebar_viral"):
-                st.session_state.show_viral = True
-                st.rerun()
-        with c2:
-            if st.button("❓ Help", use_container_width=True, key="sidebar_help"):
-                st.session_state.show_help_center = True
-                st.rerun()
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⚙️ Settings", use_container_width=True, key="sidebar_settings"):
-                st.session_state.show_settings = True
-                st.rerun()
-        with c2:
-            if st.button("⭐ Premium", use_container_width=True, key="sidebar_premium"):
-                st.session_state.show_premium = True
-                st.rerun()
+        if st.button("🔍 Live Search", use_container_width=True, key="sidebar_search"):
+            st.session_state.show_search = True
+            st.rerun()
+        
+        if st.button("📄 Document Processor", use_container_width=True, key="sidebar_docs"):
+            st.session_state.show_document = True
+            st.rerun()
+        
+        if st.button("🚀 Viral Features", use_container_width=True, key="sidebar_viral"):
+            st.session_state.show_viral = True
+            st.rerun()
+        
+        if st.button("❓ Help Center", use_container_width=True, key="sidebar_help"):
+            st.session_state.show_help_center = True
+            st.rerun()
+        
+        if st.button("⚙️ Settings", use_container_width=True, key="sidebar_settings"):
+            st.session_state.show_settings = True
+            st.rerun()
+        
+        if st.button("⭐ Premium", use_container_width=True, key="sidebar_premium"):
+            st.session_state.show_premium = True
+            st.rerun()
         
         st.divider()
         
         if not st.session_state.is_premium:
             st.markdown("""
-            <div style="background:linear-gradient(135deg,#00E5FF,#6C5CE7);border-radius:12px;padding:12px;text-align:center;animation:pulseGlow 2s infinite;">
+            <div style="background:linear-gradient(135deg,#00E5FF,#6C5CE7);border-radius:12px;padding:12px;text-align:center;">
                 <strong style="color:#fff;">⭐ Unlock Premium</strong>
                 <br><small style="color:#fff;">From $0.99/mo</small>
             </div>
@@ -1368,6 +1343,10 @@ def sidebar():
 # ═══════════════════════════════════════════════════════
 # MAIN ROUTING
 # ═══════════════════════════════════════════════════════
+
+# Initialize session state
+if "initialized" not in st.session_state:
+    st.session_state.initialized = True
 
 if st.session_state.show_money:
     sidebar()
@@ -1410,25 +1389,14 @@ elif not st.session_state.signed_in:
 else:
     sidebar()
     
-    # Top bar with New Chat button (like ChatGPT)
-    col1, col2, col3 = st.columns([4, 1, 1])
+    # Top bar like DeepSeek
+    col1, col2 = st.columns([1, 6])
     with col1:
-        pass  # Logo is in sidebar
-    with col2:
         if st.button("➕ New Chat", use_container_width=True, type="primary", key="top_new_chat"):
             create_chat()
             st.rerun()
-    with col3:
-        if st.session_state.is_premium:
-            st.markdown("""
-            <div style="background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:12px;padding:8px 12px;text-align:center;">
-                <strong style="color:#000;">💎 Premium</strong>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            if st.button("⭐ Upgrade", use_container_width=True, key="top_upgrade"):
-                st.session_state.show_premium = True
-                st.rerun()
+    with col2:
+        pass
     
     if not st.session_state.chats:
         create_chat()
@@ -1438,11 +1406,11 @@ else:
         chat = st.session_state.chats[0]
     
     if chat:
+        # Show chat title
         st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-            <span style="font-size:14px;color:#888;">🌍 {st.session_state.language}</span>
-            <span style="font-size:14px;color:#888;">🎯 {chat.get('mode', 'General')}</span>
-            <span style="font-size:14px;color:#888;">🧬 {st.session_state.ai_dna_messages}</span>
+        <div style="padding:10px 0;border-bottom:1px solid rgba(108,92,231,0.1);margin-bottom:20px;">
+            <h2 style="color:#fff;font-size:20px;margin:0;">{chat.get('title', 'New Chat')}</h2>
+            <span style="color:#888;font-size:12px;">{chat.get('mode', 'General')} • {st.session_state.language}</span>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1455,7 +1423,7 @@ else:
         tabs = st.tabs(["💬 Chat", "📸 Image Analysis", "🎨 Image Generation", "📁 Files"])
         
         with tabs[0]:
-            prompt = st.chat_input("Ask me anything — I'll help you make money!")
+            prompt = st.chat_input("Ask me anything...")
         
         with tabs[1]:
             up = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"], label_visibility="collapsed", key="image_upload")
@@ -1483,15 +1451,7 @@ else:
                         st.image(img_bytes, caption=f"AI: {img_prompt}")
                         st.download_button("📥 Download", img_bytes, "cyan8_art.png", key="img_download")
                     else:
-                        st.warning("⚠️ Replicate API limit reached. Using free generation...")
-                        related_images = generate_related_images(img_prompt, count=5)
-                        if related_images:
-                            st.markdown("### 📸 RELATED IMAGES")
-                            cols = st.columns(5)
-                            for i, img in enumerate(related_images):
-                                if i < 5:
-                                    with cols[i]:
-                                        st.image(img, use_container_width=True)
+                        st.warning("⚠️ Add REPLICATE_API_KEY to secrets.")
         
         with tabs[3]:
             st.caption("📁 Upload and process documents")
@@ -1519,16 +1479,6 @@ else:
                     enable_search = "search" in prompt.lower() or "find" in prompt.lower()
                     ans = get_enhanced_response(prompt, chat.get("mode", "General"), st.session_state.language, enable_search)
                     st.markdown(ans)
-                    
-                    # Generate related images (like ChatGPT!)
-                    related_images = generate_related_images(prompt, count=5)
-                    if related_images:
-                        st.markdown("### 📸 RELATED IMAGES")
-                        cols = st.columns(5)
-                        for i, img in enumerate(related_images):
-                            if i < 5:
-                                with cols[i]:
-                                    st.image(img, use_container_width=True)
             chat["messages"].append({"role": "assistant", "content": ans, "image": None})
             if any(w in prompt.lower() for w in ["remember", "my name", "i am", "i have"]):
                 remember_this(prompt[:200])
